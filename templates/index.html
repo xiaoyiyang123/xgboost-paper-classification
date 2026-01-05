@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>学术论文多标签分类工具</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>学术论文细分领域自动分类工具</h1>
+        
+        <!-- 文本输入分类区 -->
+        <div class="tab">
+            <button class="tab-btn active" onclick="openTab('text-tab')">文本输入</button>
+            <button class="tab-btn" onclick="openTab('pdf-tab')">PDF批量上传</button>
+        </div>
+        
+        <!-- 文本分类面板 -->
+        <div id="text-tab" class="tab-content active">
+            <textarea id="text-input" placeholder="请输入论文标题+摘要（核心内容）..." rows="8"></textarea>
+            <button onclick="classifyText()">开始分类</button>
+            <div id="text-result" class="result"></div>
+        </div>
+        
+        <!-- PDF分类面板 -->
+        <div id="pdf-tab" class="tab-content">
+            <input type="file" id="pdf-input" multiple accept=".pdf">
+            <button onclick="classifyPdf()">批量分类</button>
+            <div id="pdf-result" class="result"></div>
+            <button id="export-btn" onclick="exportResults()" style="display:none;">导出结果（Excel）</button>
+        </div>
+    </div>
+
+    <script src="../static/script.js"></script>
+</body>
+</html>
