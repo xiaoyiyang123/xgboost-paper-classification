@@ -1,0 +1,118 @@
+{% extends "layout.html" %}
+
+{% block title %}历史记录 - 论文智能分类系统{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 class="card-title">
+        <i class="fas fa-history"></i> 分类历史记录
+    </h2>
+
+    <p style="color: var(--light-gray); margin-bottom: 1.5rem;">
+        这里是您的所有分类历史记录，包括文本分类和PDF文件分类。
+    </p>
+
+    {% if historys and historys|length > 0 %}
+    <div style="overflow-x: auto;">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>操作类型</th>
+                    <th>内容</th>
+                    <th>标签</th>
+                    <th>置信度</th>
+                    <th>分类时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for history in historys %}
+                <tr data-id="{{ history.id }}">
+                    <td>{{ history.id }}</td>
+                    <td>
+                        {% if history.operation_type == 'text' %}
+                            <span style="color: #4CAF50; font-weight: 500;">
+                                <i class="fas fa-font"></i> 文本
+                            </span>
+                        {% else %}
+                            <span style="color: #2196F3; font-weight: 500;">
+                                <i class="fas fa-file-pdf"></i> PDF
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td style="max-width: 200px; word-break: break-all; color: var(--light-gray);">
+                        {{ history.content }}
+                    </td>
+                    <td style="min-width: 200px;">
+                        {% if history.labels and history.labels|length > 0 %}
+                            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                            {% for label in history.labels %}
+                                {% if label and label != '' %}
+                                <span class="label-tag" style="margin: 2px; font-size: 0.9em;">
+                                    {{ label }}
+                                </span>
+                                {% endif %}
+                            {% endfor %}
+                            </div>
+                        {% else %}
+                            <span style="color: var(--medium-gray); font-style: italic;">无标签</span>
+                        {% endif %}
+                    </td>
+                    <td style="min-width: 150px;">
+                        {% if history.confidences and history.confidences|length > 0 %}
+                            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                            {% for confidence in history.confidences %}
+                                <span class="confidence-badge" style="font-size: 0.8em;">
+                                    {{ "%.1f"|format(confidence * 100) }}%
+                                </span>
+                            {% endfor %}
+                            </div>
+                        {% else %}
+                            <span style="color: var(--medium-gray);">-</span>
+                        {% endif %}
+                    </td>
+                    <td style="color: var(--medium-gray); font-size: 0.9em;">
+                        {{ history.created_at }}
+                    </td>
+                    <td>
+                        <button
+                            class="delete-btn"
+                            onclick="deleteHistory({{ history.id }})"
+                            data-tooltip="删除记录"
+                        >
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top: 1.5rem; color: var(--medium-gray); font-size: 0.9em;">
+        共 {{ historys|length }} 条记录
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem; color: var(--medium-gray);">
+        <i class="fas fa-history" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+        <h3 style="margin-bottom: 0.5rem;">暂无历史记录</h3>
+        <p style="margin-bottom: 1.5rem; color: var(--light-gray);">您还没有进行过任何分类操作</p>
+        <a href="{{ url_for('index') }}" class="btn">
+            <i class="fas fa-arrow-right"></i> 去分类
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// 更新记录计数
+function updateRecordCount() {
+    const rows = document.querySelectorAll('.history-table tbody tr');
+    const countElement = document.querySelector('.history-table + div');
+    if (countElement) {
+        countElement.textContent = `共 ${rows.length} 条记录`;
+    }
+}
+</script>
+{% endblock %}

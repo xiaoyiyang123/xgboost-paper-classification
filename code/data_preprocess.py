@@ -7,9 +7,7 @@ from sklearn.model_selection import train_test_split
 import joblib
 
 # ---------------------- 1. 加载数据与停用词 ----------------------
-# 加载训练集（确保cnki_papers.csv已放入data文件夹）
 df = pd.read_csv("../data/cnki_papers.csv")
-# 加载停用词（创建../data/stopwords.txt，放入通用+学术停用词）
 with open("../data/stopwords.txt", "r", encoding="utf-8") as f:
     stopwords = set(f.read().splitlines())
 
@@ -50,7 +48,6 @@ joblib.dump(mlb, "../model/mlb.pkl")
 # ---------------------- 4. 特征提取（TF-IDF） ----------------------
 tfidf = TfidfVectorizer(max_features=5000, ngram_range=(1, 2))
 X = tfidf.fit_transform(df["processed_text"])
-# 保存TF-IDF特征器
 joblib.dump(tfidf, "../model/tfidf.pkl")
 
 # ---------------------- 5. 划分训练集/测试集（8:2） ----------------------

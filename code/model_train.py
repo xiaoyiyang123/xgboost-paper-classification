@@ -1,3 +1,78 @@
+# import xgboost as xgb
+# import joblib
+# import numpy as np
+# from sklearn.multioutput import ClassifierChain
+# from sklearn.metrics import accuracy_score, hamming_loss, f1_score
+# from sklearn.neighbors import KNeighborsClassifier
+#
+# # ---------------------- 1. 加载预处理后的数据 ----------------------
+# X_train, X_test, y_train, y_test = joblib.load("../data/processed_data.pkl")
+# mlb = joblib.load("../model/mlb.pkl")  # 加载标签编码器
+#
+# # ---------------------- 2. 构建XGBoost多标签模型 ----------------------
+# # 初始化XGBoost分类器
+# xgb_clf = xgb.XGBClassifier(
+#     n_estimators=200,
+#     max_depth=6,
+#     learning_rate=0.1,
+#     objective="binary:logistic",
+#     random_state=42,
+#     eval_metric="logloss"
+# )
+# # 构建分类器链
+# chain = ClassifierChain(xgb_clf)
+# # 训练模型
+# chain.fit(X_train, y_train)
+# # 保存XGBoost多标签模型
+# joblib.dump(chain, "../model/xgb_chain_model.pkl")
+#
+# # ---------------------- 3. 构建KNN对比模型 ----------------------
+# knn = KNeighborsClassifier(n_neighbors=5, metric="euclidean")
+# knn_chain = ClassifierChain(knn)
+# knn_chain.fit(X_train, y_train)
+# joblib.dump(knn_chain, "../model/knn_chain_model.pkl")
+#
+#
+# # ---------------------- 4. 模型评估----------------------
+# def evaluate_model(model, X_test, y_test):
+#     y_pred = model.predict(X_test)
+#     # 计算核心指标
+#     accuracy = accuracy_score(y_test, y_pred)
+#     hamming = hamming_loss(y_test, y_pred)
+#     macro_f1 = f1_score(y_test, y_pred, average="macro")
+#     micro_f1 = f1_score(y_test, y_pred, average="micro")
+#     # Top-1/2/3准确率（自定义计算）
+#     y_pred_proba = model.predict_proba(X_test)
+#     top1_acc = calculate_top_k_accuracy(y_test, y_pred_proba, k=1)
+#     top2_acc = calculate_top_k_accuracy(y_test, y_pred_proba, k=2)
+#     top3_acc = calculate_top_k_accuracy(y_test, y_pred_proba, k=3)
+#
+#     print("模型评估结果：")
+#     print(f"准确率: {accuracy:.4f} | 汉明损失: {hamming:.4f}")
+#     print(f"宏平均F1: {macro_f1:.4f} | 微平均F1: {micro_f1:.4f}")
+#     print(f"Top-1准确率: {top1_acc:.4f} | Top-2准确率: {top2_acc:.4f} | Top-3准确率: {top3_acc:.4f}")
+#
+#
+# def calculate_top_k_accuracy(y_true, y_pred_proba, k):
+#     """计算Top-k准确率"""
+#     correct = 0
+#     for true, proba in zip(y_true, y_pred_proba):
+#         # 取置信度前k的标签索引
+#         top_k_idx = np.argsort(proba)[-k:]
+#         # 检查真实标签中是否有至少一个在Top-k中
+#         if np.any(true[top_k_idx] == 1):
+#             correct += 1
+#     return correct / len(y_true)
+#
+#
+#
+# print("=" * 50)
+# print("XGBoost多标签模型评估：")
+# evaluate_model(chain, X_test, y_test)
+# print("=" * 50)
+# print("KNN多标签模型评估：")
+# evaluate_model(knn_chain, X_test, y_test)
+
 import xgboost as xgb
 import joblib
 import numpy as np
@@ -5,11 +80,27 @@ from sklearn.multioutput import ClassifierChain
 from sklearn.metrics import accuracy_score, hamming_loss, f1_score
 from sklearn.neighbors import KNeighborsClassifier
 
+
+# ---------------------- 新增：概率归一化函数 ----------------------
+def normalize_proba(y_pred_proba):
+    """
+    对多标签预测概率做L1归一化，确保每个样本的所有标签概率和为1
+    :param y_pred_proba: 形状为 (n_samples, n_labels) 的概率矩阵
+    :return: 归一化后的概率矩阵
+    """
+    # 计算每个样本的概率总和
+    row_sums = y_pred_proba.sum(axis=1, keepdims=True)
+    # 避免除以0（若所有概率为0，保持原值）
+    row_sums[row_sums == 0] = 1
+    # 归一化
+    return y_pred_proba / row_sums
+
+
 # ---------------------- 1. 加载预处理后的数据 ----------------------
 X_train, X_test, y_train, y_test = joblib.load("../data/processed_data.pkl")
 mlb = joblib.load("../model/mlb.pkl")  # 加载标签编码器
 
-# ---------------------- 2. 构建XGBoost多标签模型（ClassifierChain） ----------------------
+# ---------------------- 2. 构建XGBoost多标签模型 ----------------------
 # 初始化XGBoost分类器
 xgb_clf = xgb.XGBClassifier(
     n_estimators=200,
@@ -19,7 +110,7 @@ xgb_clf = xgb.XGBClassifier(
     random_state=42,
     eval_metric="logloss"
 )
-# 构建分类器链（建模标签间依赖）
+# 构建分类器链
 chain = ClassifierChain(xgb_clf)
 # 训练模型
 chain.fit(X_train, y_train)
@@ -33,7 +124,7 @@ knn_chain.fit(X_train, y_train)
 joblib.dump(knn_chain, "../model/knn_chain_model.pkl")
 
 
-# ---------------------- 4. 模型评估（验证指标） ----------------------
+# ---------------------- 4. 模型评估----------------------
 def evaluate_model(model, X_test, y_test):
     y_pred = model.predict(X_test)
     # 计算核心指标
@@ -41,20 +132,26 @@ def evaluate_model(model, X_test, y_test):
     hamming = hamming_loss(y_test, y_pred)
     macro_f1 = f1_score(y_test, y_pred, average="macro")
     micro_f1 = f1_score(y_test, y_pred, average="micro")
-    # Top-1/2/3准确率（自定义计算）
+
+    # 预测概率并归一化（关键修改）
     y_pred_proba = model.predict_proba(X_test)
-    top1_acc = calculate_top_k_accuracy(y_test, y_pred_proba, k=1)
-    top2_acc = calculate_top_k_accuracy(y_test, y_pred_proba, k=2)
-    top3_acc = calculate_top_k_accuracy(y_test, y_pred_proba, k=3)
+    y_pred_proba_normalized = normalize_proba(y_pred_proba)
+
+    # Top-1/2/3准确率（使用归一化后的概率）
+    top1_acc = calculate_top_k_accuracy(y_test, y_pred_proba_normalized, k=1)
+    top2_acc = calculate_top_k_accuracy(y_test, y_pred_proba_normalized, k=2)
+    top3_acc = calculate_top_k_accuracy(y_test, y_pred_proba_normalized, k=3)
 
     print("模型评估结果：")
     print(f"准确率: {accuracy:.4f} | 汉明损失: {hamming:.4f}")
     print(f"宏平均F1: {macro_f1:.4f} | 微平均F1: {micro_f1:.4f}")
     print(f"Top-1准确率: {top1_acc:.4f} | Top-2准确率: {top2_acc:.4f} | Top-3准确率: {top3_acc:.4f}")
+    # 验证归一化结果（可选打印）
+    print(f"随机样本概率和: {y_pred_proba_normalized[0].sum():.4f} (应≈1)")
 
 
 def calculate_top_k_accuracy(y_true, y_pred_proba, k):
-    """计算Top-k准确率"""
+    """计算Top-k准确率（使用归一化后的概率）"""
     correct = 0
     for true, proba in zip(y_true, y_pred_proba):
         # 取置信度前k的标签索引
@@ -65,7 +162,6 @@ def calculate_top_k_accuracy(y_true, y_pred_proba, k):
     return correct / len(y_true)
 
 
-# 评估两个模型
 print("=" * 50)
 print("XGBoost多标签模型评估：")
 evaluate_model(chain, X_test, y_test)

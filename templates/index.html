@@ -1,36 +1,130 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <title>学术论文多标签分类工具</title>
-    <link rel="stylesheet" href="../static/style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>学术论文细分领域自动分类工具</h1>
-        
-        <!-- 文本输入分类区 -->
-        <div class="tab">
-            <button class="tab-btn active" onclick="openTab('text-tab')">文本输入</button>
-            <button class="tab-btn" onclick="openTab('pdf-tab')">PDF批量上传</button>
+{% extends "layout.html" %}
+
+{% block title %}首页 - 论文智能分类系统{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 class="card-title">
+        <i class="fas fa-file-pdf"></i> PDF论文批量分类
+    </h2>
+
+    <p style="color: var(--light-gray); margin-bottom: 1.5rem;">
+        上传PDF格式的学术论文，系统将自动识别并为其添加多标签分类。支持批量上传，一次可处理多个文件。
+    </p>
+
+    <!-- 上传区域 -->
+    <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">
+            <i class="fas fa-cloud-upload-alt"></i>
         </div>
-        
-        <!-- 文本分类面板 -->
-        <div id="text-tab" class="tab-content active">
-            <textarea id="text-input" placeholder="请输入论文标题+摘要（核心内容）..." rows="8"></textarea>
-            <button onclick="classifyText()">开始分类</button>
-            <div id="text-result" class="result"></div>
-        </div>
-        
-        <!-- PDF分类面板 -->
-        <div id="pdf-tab" class="tab-content">
-            <input type="file" id="pdf-input" multiple accept=".pdf">
-            <button onclick="classifyPdf()">批量分类</button>
-            <div id="pdf-result" class="result"></div>
-            <button id="export-btn" onclick="exportResults()" style="display:none;">导出结果（Excel）</button>
-        </div>
+        <h3 class="upload-text">点击选择文件或拖拽文件到这里</h3>
+        <p class="upload-subtext">支持批量上传PDF文件，单个文件大小建议不超过10MB</p>
+        <input type="file" id="fileInput" class="file-input" multiple accept=".pdf">
     </div>
 
-    <script src="../static/script.js"></script>
-</body>
-</html>
+    <!-- 文件列表 -->
+    <div class="file-list" id="fileList">
+        <!-- 文件列表将通过JavaScript动态生成 -->
+    </div>
+
+    <!-- 操作按钮 -->
+    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+        <button class="btn" id="classifyBtn">
+            <i class="fas fa-brain"></i> 开始分类
+        </button>
+        <button class="btn btn-secondary" onclick="clearAllFiles()">
+            <i class="fas fa-trash"></i> 清空列表
+        </button>
+    </div>
+
+    <!-- 加载状态 -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>正在处理文件，请稍候...</p>
+    </div>
+
+    <!-- 分类结果 -->
+    <div class="results-container">
+        <h3 style="color: var(--light-gray); margin-bottom: 1rem;">分类结果</h3>
+        <div id="resultsContainer">
+            <!-- 结果将通过JavaScript动态生成 -->
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">
+        <i class="fas fa-font"></i> 文本分类
+    </h2>
+
+    <p style="color: var(--light-gray); margin-bottom: 1.5rem;">
+        输入论文摘要或相关文本内容，系统将自动识别并为其添加多标签分类。
+    </p>
+
+    <!-- 文本输入区域 -->
+    <div class="form-group">
+        <label for="textInput" class="form-label">输入文本内容：</label>
+        <textarea
+            id="textInput"
+            class="form-input textarea"
+            placeholder="请输入论文摘要或相关文本内容..."
+            rows="6"
+        ></textarea>
+    </div>
+
+    <!-- 分类按钮 -->
+    <button class="btn" id="classifyTextBtn">
+        <i class="fas fa-brain"></i> 文本分类
+    </button>
+
+    <!-- 文本分类结果 -->
+    <div class="results-container" style="margin-top: 2rem;">
+        <h3 style="color: var(--light-gray); margin-bottom: 1rem;">分类结果</h3>
+        <div id="textResults">
+            <!-- 结果将通过JavaScript动态生成 -->
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">
+        <i class="fas fa-info-circle"></i> 系统说明
+    </h2>
+
+    <div style="color: var(--light-gray); line-height: 1.8;">
+        <h3 style="margin-bottom: 0.5rem;">功能特点：</h3>
+        <ul style="margin-left: 1.5rem; margin-bottom: 1rem;">
+            <li>支持PDF论文批量上传和分类</li>
+            <li>支持文本内容直接分类</li>
+            <li>多标签分类系统，每篇论文可分配多个标签</li>
+            <li>显示每个标签的置信度</li>
+            <li>分类结果可导出为Excel文件</li>
+            <li>完整的用户系统，保存分类历史记录</li>
+        </ul>
+
+        <h3 style="margin-bottom: 0.5rem;">使用步骤：</h3>
+        <ol style="margin-left: 1.5rem; margin-bottom: 1rem;">
+            <li>注册/登录账户（分类记录将与账户关联）</li>
+            <li>上传PDF文件或输入文本内容</li>
+            <li>点击"开始分类"按钮</li>
+            <li>查看分类结果和标签置信度</li>
+            <li>可导出结果或查看历史记录</li>
+        </ol>
+
+        <p style="color: var(--medium-gray); font-size: 0.9rem;">
+            <i class="fas fa-exclamation-circle"></i> 注意：系统使用XGBoost多标签分类模型，分类准确度基于训练数据。
+        </p>
+    </div>
+</div>
+
+<script>
+    // 页面特定的JavaScript代码
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化页面特定的功能
+        const classifyBtn = document.getElementById('classifyBtn');
+        if (classifyBtn) {
+            classifyBtn.disabled = true;
+        }
+    });
+</script>
+{% endblock %}
